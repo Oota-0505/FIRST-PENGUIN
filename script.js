@@ -210,6 +210,10 @@ document.addEventListener('DOMContentLoaded', function() {
             document.body.classList.remove('custom-cursor-active');
         });
 
+        // ページ読み込み時にカーソルを表示
+        cursor.classList.add('active');
+        document.body.classList.add('custom-cursor-active');
+
         updateCursor();
     }
 
@@ -222,6 +226,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const images = document.querySelectorAll('.feature-image');
         let currentStep = 0;
         let autoPlayInterval;
+        let isAnimationStarted = false;
         const INTERVAL_TIME = 3500; // 3.5秒間隔
 
         function setActiveStep(index) {
@@ -259,6 +264,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         function startAutoPlay() {
+            if (!isAnimationStarted) return;
             autoPlayInterval = setInterval(nextStep, INTERVAL_TIME);
         }
 
@@ -268,12 +274,21 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        // 初期状態を設定
-        setActiveStep(0);
+        function startAnimation() {
+            if (isAnimationStarted) return;
+            isAnimationStarted = true;
+            
+            // 初期状態を設定
+            setActiveStep(0);
+            
+            // 自動再生開始
+            startAutoPlay();
+        }
 
         // ステップクリックイベント
         steps.forEach((step, index) => {
             step.addEventListener('click', () => {
+                if (!isAnimationStarted) return;
                 stopAutoPlay();
                 setActiveStep(index);
                 // 3秒後に自動再生再開（3.5秒間隔に合わせて調整）
@@ -285,16 +300,34 @@ document.addEventListener('DOMContentLoaded', function() {
         const container = document.querySelector('.feature-steps-container');
         if (container) {
             container.addEventListener('mouseenter', () => {
+                if (!isAnimationStarted) return;
                 stopAutoPlay();
             });
             container.addEventListener('mouseleave', () => {
+                if (!isAnimationStarted) return;
                 // 少し遅延してから再開（ユーザビリティ向上）
                 setTimeout(startAutoPlay, 1000);
             });
         }
 
-        // 自動再生開始
-        startAutoPlay();
+        // Intersection Observerでエリアに入ったらアニメーション開始
+        const benefitsSection = document.querySelector('#benefits');
+        if (benefitsSection) {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        // エリアに入ったら少し遅延してからアニメーション開始
+                        setTimeout(startAnimation, 500);
+                        observer.unobserve(entry.target); // 一度だけ実行
+                    }
+                });
+            }, {
+                threshold: 0.3, // 30%見えたら開始
+                rootMargin: '0px 0px -100px 0px'
+            });
+            
+            observer.observe(benefitsSection);
+        }
     }
 
     // ステップアニメーションを初期化
